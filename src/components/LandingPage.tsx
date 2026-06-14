@@ -37,7 +37,7 @@ const FAQItem: React.FC<FAQItemProps> = ({ question, answer }) => {
 };
 
 export const LandingPage: React.FC = () => {
-  const { setCurrentStep } = useTax();
+  const { setCurrentStep, user } = useTax();
 
   const faqs = [
     {
@@ -98,12 +98,21 @@ export const LandingPage: React.FC = () => {
 
               {/* Call To Action */}
               <div className="flex flex-col sm:flex-row justify-center lg:justify-start items-center gap-4">
-                <button
-                  onClick={() => setCurrentStep(1)}
-                  className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/25 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 text-center font-outfit cursor-pointer"
-                >
-                  Start Your Tax Check →
-                </button>
+                {!user ? (
+                  <button
+                    onClick={() => setCurrentStep(-1)}
+                    className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/25 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 text-center font-outfit cursor-pointer animate-fade-in"
+                  >
+                    Start Your Tax Check →
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setCurrentStep(1)}
+                    className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/25 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 text-center font-outfit cursor-pointer"
+                  >
+                    Start Your Tax Check →
+                  </button>
+                )}
                 <a
                   href="#how-it-works"
                   className="text-sm font-semibold text-slate-500 hover:text-slate-900 px-4 py-2 transition-colors"

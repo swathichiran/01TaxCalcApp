@@ -7,6 +7,10 @@ import {
   calculateOldRegimeTax
 } from '../utils/taxEngine';
 
+export interface User {
+  name: string;
+  email: string;
+}
 
 export interface TaxState {
   ageCategory: AgeCategory;
@@ -40,7 +44,7 @@ export interface TaxState {
 
 export interface TaxContextType {
   state: TaxState;
-  currentStep: number; // 0: Landing, 1-8: Wizard, 9: Result
+  currentStep: number; // -1: SignUp, 0: Landing, 1-8: Wizard, 9: Result
   updateState: (updates: Partial<TaxState>) => void;
   setCurrentStep: (step: number) => void;
   resetState: () => void;
@@ -49,6 +53,11 @@ export interface TaxContextType {
   oldRegimeTax: TaxResult;
   savings: number;
   recommendedRegime: 'old' | 'new';
+  // User Authentication
+  user: User | null;
+  registerUser: (name: string, email: string, password: string) => { success: boolean; error?: string };
+  loginUser: (email: string, password: string) => { success: boolean; error?: string };
+  logoutUser: () => void;
 }
 
 const initialTaxState: TaxState = {
@@ -86,6 +95,19 @@ const TaxContext = createContext<TaxContextType | undefined>(undefined);
 export const TaxProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, setState] = useState<TaxState>(initialTaxState);
   const [currentStep, setCurrentStep] = useState<number>(0);
+  const [user, setUser] = useState<User | null>(null);
+
+  // Initialize session on load
+  useEffect(() => {
+    const session = localStorage.getItem('taxcalc_user_session');
+    if (session) {
+      try {
+        setUser(JSON.parse(session));
+      } catch (e) {
+        localStorage.removeItem('taxcalc_user_session');
+      }
+    }
+  }, []);
 
   const updateState = (updates: Partial<TaxState>) => {
     setState((prev) => ({ ...prev, ...updates }));
@@ -93,6 +115,67 @@ export const TaxProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const resetState = () => {
     setState(initialTaxState);
+    setCurrentStep(0);
+  };
+
+  // Auth Operations
+  const registerUser = (name: string, email: string, password: string) => {
+    const rawUsers = localStorage.getItem('taxcalc_users');
+    let usersMap: Record<string, any> = {};
+    if (rawUsers) {
+      try {
+        usersMap = JSON.parse(rawUsers);
+      } catch (e) {
+        usersMap = {};
+      }
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (usersMap[normalizedEmail]) {
+      return { success: false, error: 'Email already registered.' };
+    }
+
+    usersMap[normalizedEmail] = { name: name.trim(), password };
+    localStorage.setItem('taxcalc_users', JSON.stringify(usersMap));
+
+    const sessionUser: User = { name: name.trim(), email: normalizedEmail };
+    localStorage.setItem('taxcalc_user_session', JSON.stringify(sessionUser));
+    setUser(sessionUser);
+
+    return { success: true };
+  };
+
+  const loginUser = (email: string, password: string) => {
+    const rawUsers = localStorage.getItem('taxcalc_users');
+    let usersMap: Record<string, any> = {};
+    if (rawUsers) {
+      try {
+        usersMap = JSON.parse(rawUsers);
+      } catch (e) {
+        usersMap = {};
+      }
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const existingUser = usersMap[normalizedEmail];
+
+    if (!existingUser || existingUser.password !== password) {
+      return { success: false, error: 'Invalid email or password.' };
+    }
+
+    const sessionUser: User = {
+      name: existingUser.name,
+      email: normalizedEmail,
+    };
+    localStorage.setItem('taxcalc_user_session', JSON.stringify(sessionUser));
+    setUser(sessionUser);
+
+    return { success: true };
+  };
+
+  const logoutUser = () => {
+    localStorage.removeItem('taxcalc_user_session');
+    setUser(null);
     setCurrentStep(0);
   };
 
@@ -137,6 +220,10 @@ export const TaxProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         oldRegimeTax,
         savings,
         recommendedRegime,
+        user,
+        registerUser,
+        loginUser,
+        logoutUser,
       }}
     >
       {children}

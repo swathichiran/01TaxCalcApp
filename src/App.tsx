@@ -2,6 +2,7 @@ import React from 'react';
 import { TaxProvider, useTax } from './context/TaxContext';
 import { Layout } from './components/Layout';
 import { LandingPage } from './components/LandingPage';
+import { SignUp } from './components/SignUp';
 
 
 const AppContent: React.FC = () => {
@@ -9,7 +10,9 @@ const AppContent: React.FC = () => {
 
   return (
     <Layout>
-      {currentStep === 0 ? (
+      {currentStep === -1 ? (
+        <SignUp />
+      ) : currentStep === 0 ? (
         <LandingPage />
       ) : (
         <div className="flex-grow flex items-center justify-center py-20 px-4">
