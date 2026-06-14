@@ -7,12 +7,6 @@ import {
   calculateOldRegimeTax
 } from '../utils/taxEngine';
 
-export interface User {
-  name: string;
-  email: string;
-  isPaid?: boolean;
-  paymentReference?: string;
-}
 
 export interface TaxState {
   ageCategory: AgeCategory;
@@ -46,7 +40,7 @@ export interface TaxState {
 
 export interface TaxContextType {
   state: TaxState;
-  currentStep: number; // -2: UnlockPage, -1: SignUp, 0: Landing, 1-8: Wizard, 9: Result
+  currentStep: number; // 0: Landing, 1-8: Wizard, 9: Result
   updateState: (updates: Partial<TaxState>) => void;
   setCurrentStep: (step: number) => void;
   resetState: () => void;
@@ -55,13 +49,6 @@ export interface TaxContextType {
   oldRegimeTax: TaxResult;
   savings: number;
   recommendedRegime: 'old' | 'new';
-  // User Authentication & Payment
-  user: User | null;
-  isPaid: boolean;
-  registerUser: (name: string, email: string, password: string) => { success: boolean; error?: string };
-  loginUser: (email: string, password: string) => { success: boolean; error?: string };
-  logoutUser: () => void;
-  unlockUser: (reference: string) => { success: boolean; error?: string };
 }
 
 const initialTaxState: TaxState = {
@@ -99,19 +86,6 @@ const TaxContext = createContext<TaxContextType | undefined>(undefined);
 export const TaxProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, setState] = useState<TaxState>(initialTaxState);
   const [currentStep, setCurrentStep] = useState<number>(0);
-  const [user, setUser] = useState<User | null>(null);
-
-  // Initialize session on load
-  useEffect(() => {
-    const session = localStorage.getItem('taxcalc_user_session');
-    if (session) {
-      try {
-        setUser(JSON.parse(session));
-      } catch (e) {
-        localStorage.removeItem('taxcalc_user_session');
-      }
-    }
-  }, []);
 
   const updateState = (updates: Partial<TaxState>) => {
     setState((prev) => ({ ...prev, ...updates }));
@@ -122,111 +96,6 @@ export const TaxProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentStep(0);
   };
 
-  // Auth Operations
-  const registerUser = (name: string, email: string, password: string) => {
-    const rawUsers = localStorage.getItem('taxcalc_users');
-    let usersMap: Record<string, any> = {};
-    if (rawUsers) {
-      try {
-        usersMap = JSON.parse(rawUsers);
-      } catch (e) {
-        usersMap = {};
-      }
-    }
-
-    const normalizedEmail = email.trim().toLowerCase();
-    if (usersMap[normalizedEmail]) {
-      return { success: false, error: 'Email already registered.' };
-    }
-
-    // Register user with isPaid: false by default
-    usersMap[normalizedEmail] = { name: name.trim(), password, isPaid: false };
-    localStorage.setItem('taxcalc_users', JSON.stringify(usersMap));
-
-    // Log user in
-    const sessionUser: User = { name: name.trim(), email: normalizedEmail, isPaid: false };
-    localStorage.setItem('taxcalc_user_session', JSON.stringify(sessionUser));
-    setUser(sessionUser);
-
-    return { success: true };
-  };
-
-  const loginUser = (email: string, password: string) => {
-    const rawUsers = localStorage.getItem('taxcalc_users');
-    let usersMap: Record<string, any> = {};
-    if (rawUsers) {
-      try {
-        usersMap = JSON.parse(rawUsers);
-      } catch (e) {
-        usersMap = {};
-      }
-    }
-
-    const normalizedEmail = email.trim().toLowerCase();
-    const existingUser = usersMap[normalizedEmail];
-
-    if (!existingUser || existingUser.password !== password) {
-      return { success: false, error: 'Invalid email or password.' };
-    }
-
-    const sessionUser: User = {
-      name: existingUser.name,
-      email: normalizedEmail,
-      isPaid: existingUser.isPaid || false,
-      paymentReference: existingUser.paymentReference
-    };
-    localStorage.setItem('taxcalc_user_session', JSON.stringify(sessionUser));
-    setUser(sessionUser);
-
-    return { success: true };
-  };
-
-  const logoutUser = () => {
-    localStorage.removeItem('taxcalc_user_session');
-    setUser(null);
-    setCurrentStep(0);
-  };
-
-  const unlockUser = (reference: string) => {
-    if (!user) {
-      return { success: false, error: 'User is not logged in.' };
-    }
-
-    const cleanedRef = reference.trim();
-    if (!/^\d{10}$/.test(cleanedRef)) {
-      return { success: false, error: 'Reference must be exactly 10 digits.' };
-    }
-
-    const rawUsers = localStorage.getItem('taxcalc_users');
-    let usersMap: Record<string, any> = {};
-    if (rawUsers) {
-      try {
-        usersMap = JSON.parse(rawUsers);
-      } catch (e) {
-        usersMap = {};
-      }
-    }
-
-    const emailKey = user.email.toLowerCase();
-    if (usersMap[emailKey]) {
-      usersMap[emailKey].isPaid = true;
-      usersMap[emailKey].paymentReference = cleanedRef;
-      localStorage.setItem('taxcalc_users', JSON.stringify(usersMap));
-    }
-
-    const updatedUser: User = {
-      ...user,
-      isPaid: true,
-      paymentReference: cleanedRef
-    };
-    localStorage.setItem('taxcalc_user_session', JSON.stringify(updatedUser));
-    setUser(updatedUser);
-
-    return { success: true };
-  };
-
-  // Derived state
-  const isPaid = user?.isPaid || false;
   const annualGross = (state.monthlyTakeHome * 12) + state.otherIncome;
   
   const deductionsInput: TaxDeductionsInput = {
@@ -268,12 +137,6 @@ export const TaxProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         oldRegimeTax,
         savings,
         recommendedRegime,
-        user,
-        isPaid,
-        registerUser,
-        loginUser,
-        logoutUser,
-        unlockUser,
       }}
     >
       {children}

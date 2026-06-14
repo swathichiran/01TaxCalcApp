@@ -1,13 +1,12 @@
 import React, { type ReactNode } from 'react';
 import { ShieldAlert, Info } from 'lucide-react';
-import { useTax } from '../context/TaxContext';
+
 
 interface LayoutProps {
   children: ReactNode;
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { user, logoutUser, setCurrentStep, currentStep } = useTax();
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 flex flex-col antialiased">
       {/* Header */}
@@ -29,29 +28,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
 
           <div className="flex items-center space-x-4">
-            {user ? (
-              <div className="flex items-center space-x-3">
-                <div className="flex flex-col items-end hidden sm:flex">
-                  <span className="text-xs font-bold text-slate-800">Hi, {user.name}</span>
-                  <span className="text-[9px] text-emerald-600 font-extrabold uppercase tracking-wider">Local Profile</span>
-                </div>
-                <button
-                  onClick={logoutUser}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 text-xs font-bold rounded-lg transition-colors cursor-pointer"
-                >
-                  Sign Out
-                </button>
-              </div>
-            ) : (
-              currentStep !== -1 && (
-                <button
-                  onClick={() => setCurrentStep(-1)}
-                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
-                >
-                  Sign In
-                </button>
-              )
-            )}
+
             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200/60 shadow-sm">
               FY 2025-26
             </span>

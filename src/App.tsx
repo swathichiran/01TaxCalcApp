@@ -1,27 +1,15 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { TaxProvider, useTax } from './context/TaxContext';
 import { Layout } from './components/Layout';
 import { LandingPage } from './components/LandingPage';
-import { SignUp } from './components/SignUp';
-import { UnlockPage } from './components/UnlockPage';
+
 
 const AppContent: React.FC = () => {
-  const { currentStep, setCurrentStep, user, isPaid } = useTax();
-
-  // Wizard Lock Guard
-  useEffect(() => {
-    if (currentStep > 0 && (!user || !isPaid)) {
-      setCurrentStep(0); // Force redirect to landing page
-    }
-  }, [currentStep, user, isPaid, setCurrentStep]);
+  const { currentStep, setCurrentStep } = useTax();
 
   return (
     <Layout>
-      {currentStep === -2 ? (
-        <UnlockPage />
-      ) : currentStep === -1 ? (
-        <SignUp />
-      ) : currentStep === 0 ? (
+      {currentStep === 0 ? (
         <LandingPage />
       ) : (
         <div className="flex-grow flex items-center justify-center py-20 px-4">
